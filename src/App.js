@@ -1,65 +1,112 @@
 import { useEffect, useState } from 'react';
 import { w3cwebsocket as W3CWebSocket } from 'websocket';
-import { selectBook } from './slices/bookSlice';
+import { selectBook, updateBuy, updateSell } from './slices/bookSlice';
 import _ from 'lodash';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 const client = new W3CWebSocket('wss://api-pub.bitfinex.com/ws/2');
 const inputDetails = {
   event: 'subscribe',
   channel: 'book',
-  symbol: 'tBTCUSD'
+  symbol: 'tBTCUSD',
+  pricision: 'P0'
 };
 
 function App() {
+  const dispatch = useDispatch();
   const book = useSelector(selectBook);
-  const [data, setData] = useState([]);
-  useEffect(() => {
-    if (book.length > 0) {
-      setData(book);
+  const [sell, setSell] = useState([]);
+  const [buy, setBuy] = useState([]);
+
+  const sortAndUpdate = (records) => {
+    // const sorted = _.sortBy([...items, records], [0], ['desc']);
+    if (records[2] > 0) {
+      setBuy((items) => _.sortBy([...items, records], [0], ['desc']));
+      dispatch(updateBuy({ buy }));
+    } else {
+      setSell((items) => _.sortBy([...items, records], [0], ['desc']));
+      dispatch(updateSell({ sell }));
     }
+  };
+
+  if (book.buy > 0) {
+    setBuy(book.buy);
+  }
+  if (book.sell > 0) {
+    setBuy(book.sell);
+  }
+
+  useEffect(() => {
     client.onopen = () => {
       client.send(JSON.stringify(inputDetails));
     };
     client.onmessage = (message) => {
       const dataFromServer = JSON.parse(message.data);
-      if (Array.isArray(dataFromServer) && Array.isArray(dataFromServer[1])) {
-        setData([...data, dataFromServer[1]]);
+      // console.log(dataFromServer);
+      let records = dataFromServer[1];
+      if (
+        Array.isArray(dataFromServer) &&
+        Array.isArray(records) &&
+        records.length === 3
+      ) {
+        sortAndUpdate(records);
       }
     };
+    /* eslint-disable */
   }, []);
 
   return (
-    <div class='flex flex-col m-5'>
-      <div class='-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8'>
-        <div class='py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8'>
-          <h1 class='text-center font-medium text-lg mb-2'>Order Book</h1>
-          <div class='shadow overflow-hidden border-b border-gray-200 sm:rounded-lg'>
-            <table>
-              <thead>
-                <tr>
-                  <th scope='col'>Count</th>
-                  <th scope='col'>Amount</th>
-                  <th scope='col'>Total</th>
-                  <th scope='col'>Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data &&
-                  data.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item[1]}</td>
-                      <td>{item[2]}</td>
-                      <td>#{item[2]}</td>
-                      <td>{item[0]}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+    <>
+      <h1 className='text-center font-medium text-xl my-2'>Order Book</h1>
+      <main>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th scope='col'>Count</th>
+                <th scope='col'>Amount</th>
+                <th scope='col'>Total</th>
+                <th scope='col'>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {buy &&
+                buy.slice(0, 14).map((item, index) => (
+                  <tr key={index}>
+                    <td>{item[1]}</td>
+                    <td>{parseFloat(item[2]).toFixed(4)}</td>
+                    <td>#</td>
+                    <td>{item[0]}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-    </div>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th scope='col'>Price</th>
+                <th scope='col'>Total</th>
+                <th scope='col'>Amount</th>
+                <th scope='col'>Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sell &&
+                sell.slice(0, 14).map((item, index) => (
+                  <tr key={index}>
+                    <td>{item[0]}</td>
+                    <td>#</td>
+                    <td>{parseFloat(-1 * item[2]).toFixed(4)}</td>
+                    <td>{item[1]}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </>
   );
 }
 

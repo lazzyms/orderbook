@@ -3,13 +3,19 @@ import { createSlice } from '@reduxjs/toolkit';
 export const bookSlice = createSlice({
   name: 'book',
   initialState: {
-    data: []
+    buy: [],
+    sell: []
   },
   reducers: {
-    updateOrderBook: (state, action) => {
-      state.data = action.payload;
-      saveToLocalStorage(action.payload);
+    updateBuy: (state, action) => {
+      console.log('BUY', action.payload);
+      state.buy = action.payload;
+      saveToLocalStorage(state);
     },
+    updateSell: (state, action) => {
+      state.sell = action.payload;
+      saveToLocalStorage(state);
+    }
   }
 });
 
@@ -22,15 +28,7 @@ function saveToLocalStorage(state) {
   }
 }
 
-function deleteFromLocalStorage() {
-  try {
-    localStorage.removeItem('persistentBook');
-  } catch (e) {
-    console.warn(e);
-  }
-}
-
-export const { updateOrderBook } = bookSlice.actions;
-export const selectBook = (state) => state.book.data;
+export const { updateBuy, updateSell } = bookSlice.actions;
+export const selectBook = (state) => state.book;
 
 export default bookSlice.reducer;

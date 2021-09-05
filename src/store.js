@@ -1,15 +1,12 @@
-import { configureStore } from "@reduxjs/toolkit";
-import bookReducer from "./slices/bookSlice";
+import { configureStore } from '@reduxjs/toolkit';
+import bookReducer from './slices/bookSlice';
 
 function loadFromBrowser() {
   try {
-    const serialisedState = localStorage.getItem("persistentBook");
+    const serialisedState = localStorage.getItem('persistentBook');
     if (serialisedState === null) return undefined;
-    const user = JSON.parse(serialisedState);
-    const data = {
-      book: { data: user, token: user.token, isLoggedIn: true },
-    };
-    return data;
+    const book = JSON.parse(serialisedState);
+    return { book };
   } catch (e) {
     console.warn(e);
     return undefined;
@@ -18,7 +15,7 @@ function loadFromBrowser() {
 
 export default configureStore({
   reducer: {
-    book: bookReducer,
+    book: bookReducer
   },
-  preloadedState: loadFromBrowser(),
+  preloadedState: loadFromBrowser()
 });
